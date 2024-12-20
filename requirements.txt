@@ -1,4 +1,6 @@
 apache-airflow-providers-amazon
+apache-airflow-providers-common-sql
 minio
 pandas
 pendulum
+psycopg2-binary

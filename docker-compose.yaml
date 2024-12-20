@@ -243,6 +243,9 @@ services:
         airflow connections add airflow-logger \
         --conn-uri aws:///?aws_access_key_id=$MINIO_ACCESS_KEY_ID\&aws_secret_access_key=$MINIO_SECRET_ACCESS_KEY\&region_name=$MINIO_REGION_NAME\&endpoint_url=$MINIO_ENDPOINT_URL || true
 
+        airflow connections add postgres-conn \
+        --conn-uri postgres://airflow:airflow@postgres:5432/airflow || true
+
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:

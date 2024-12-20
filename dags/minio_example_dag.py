@@ -10,21 +10,23 @@ from minio import Minio
 from minio.error import S3Error
 
 from airflow.decorators import dag, task
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+
 import pyarrow.csv as pcsv
 import pyarrow.parquet as pq
 
 
+# Define DAG
 @dag(
-    dag_id="minio",
+    dag_id="minio_example_dag",
     description="do some stuff with MinIO and Postgres working on CSV files",
-    schedule="@hourly",
+    schedule=None,
     start_date=pendulum.datetime(2024, 12, 18, tz="UTC"),
     catchup=False,
     tags=["minio"],
 )
 def dag():
-    # http_client = urllib3.PoolManager(cert_reqs='CERT_NONE')
-    # urllib3.disable_warnings()
+    # Initialize MinIO configuration
     minio_config = {
         "csv_bucket": "csv-files",
         "parquet_bucket": "parquet-files",
@@ -43,12 +45,13 @@ def dag():
         secure=False,
     )
     
+    # Filepath variables
     csv_file_name = "food-price-index-september-2023-weighted-average-prices.csv"
     csv_file_path = f"/opt/airflow/data/in/{csv_file_name}"
-    
     parquet_file_name = "food-price-index-september-2023-weighted-average-prices.parquet"
     parquet_file_path = f"/opt/airflow/data/out/{parquet_file_name}"
     
+    # Define tasks
     @task
     def put_csv_to_minio():
         # Define some variables
@@ -94,8 +97,25 @@ def dag():
             logging.info("%s uploaded to %s bucket.", parquet_file_name, bucket_name)
         except S3Error as err:
             logging.error(err)
+            
+    # Simple SQLExecuteQueryOperator to create target table from .sql script file
+    create_table = SQLExecuteQueryOperator(
+        task_id="create_food_price_index_table",
+        conn_id="postgres-conn",
+        sql="sql/create_food_price_index_table.sql"
+    )
     
-    put_csv_to_minio() >> convert_csv_to_parquet() >> put_parquet_to_minio()
+    # Bash task to copy .csv file to Postgres using `psql` bash command
+    @task.bash
+    def insert_data_to_postgres():
+        return f"""
+            PGPASSWORD=airflow psql -h postgres -U airflow -d airflow \
+            -c "\copy public.food_price_index FROM {csv_file_path} DELIMITER ',' CSV HEADER;"
+            """
     
+    # Define task execution order
+    put_csv_to_minio() >> convert_csv_to_parquet() >> put_parquet_to_minio() >> create_table >> insert_data_to_postgres()
+ 
     
+# Instantiate the DAG
 dag()
