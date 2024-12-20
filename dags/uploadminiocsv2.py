@@ -16,7 +16,6 @@
 
 from datetime import datetime, timedelta
 from minio import Minio
-from examples.progress import Progress
 from minio.commonconfig import GOVERNANCE, Tags
 from minio.retention import Retention
 from minio.sse import SseCustomerKey, SseKMS, SseS3
