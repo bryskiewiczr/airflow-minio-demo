@@ -1,2 +1,4 @@
-minio
 apache-airflow-providers-amazon
+minio
+pandas
+pendulum

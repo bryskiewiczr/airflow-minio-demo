@@ -1,0 +1,1 @@
+# make sure to log in to the MinIO web console and create an access key and secret key and then update them in .env file

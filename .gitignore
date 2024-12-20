@@ -196,3 +196,6 @@ pyrightconfig.json
 
 # ignore Airflow logs folder when commiting to repo
 logs/
+
+# ignore out data files
+data/out/
